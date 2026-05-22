@@ -11,7 +11,7 @@ import pysam
 import math
 import glob
 
-from pkg_resources import get_distribution
+from mgatk import __version__
 from subprocess import call, check_call
 from .mgatkHelp import *
 from ruamel.yaml import YAML
@@ -20,7 +20,7 @@ from ruamel.yaml.scalarstring import SingleQuotedScalarString as sqs
 from multiprocessing import Pool
 
 @click.command()
-@click.version_option()
+@click.version_option(version=__version__, prog_name='mgatk')
 @click.argument('mode', type=click.Choice(['bcall', 'call', 'tenx', 'check', 'support', 'remove-background']))
 @click.option('--input', '-i', default = ".", required=True, help='Input; either directory of singular .bam file; see documentation. REQUIRED.')
 @click.option('--output', '-o', default="mgatk_out", help='Output directory for analysis required for `call` and `bcall`. Default = mgatk_out')
@@ -82,7 +82,6 @@ def main(mode, input, output, name, mito_genome, ncores,
 	
 	script_dir = os.path.dirname(os.path.realpath(__file__))
 	cwd = os.getcwd()
-	__version__ = get_distribution('mgatk').version
 	click.echo(gettime() + "mgatk v%s" % __version__)
 	
 	# Determine cores
