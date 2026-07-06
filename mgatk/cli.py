@@ -12,8 +12,8 @@ import math
 import glob
 
 from importlib.metadata import version
-from subprocess import call, check_call
 from .mgatkHelp import *
+from .processing.barcodes import quantify_barcodes, split_barcoded_bam
 from ruamel.yaml import YAML
 from itertools import repeat
 from ruamel.yaml.scalarstring import SingleQuotedScalarString as sqs
@@ -179,27 +179,23 @@ def main(mode, input, output, name, mito_genome, ncores,
 			click.echo(gettime() + "User specified mitochondrial genome does NOT match .bam file; correctly specify reference genome or .fasta file")
 			quit()
 		
-		# Actually call the external script based on user input
+		# Determine barcodes (and, for bcall, split the bam per barcode) directly in-process
 		if(not barcode_known):
 			barc_quant_file = of + "/final/barcodeQuants.tsv"
 			passing_barcode_file = of + "/final/passingBarcodes.tsv"
-			find_barcodes_py = script_dir + "/bin/python/find_barcodes.py"
-			
-			pycall = " ".join(['python', find_barcodes_py, input, bcbd, barcode_tag, str(min_barcode_reads), mito_chr, barc_quant_file, passing_barcode_file])
-			os.system(pycall)
+
+			quantify_barcodes(input, barcode_tag, min_barcode_reads, mito_chr, barc_quant_file, passing_barcode_file)
 			barcodes = passing_barcode_file
 
 		# Potentially split the valid barcodes into smaller files if we need to
 		if(mode == "bcall"):
 			barcode_files = split_barcodes_file(barcodes, nsamples, output)
-			split_barcoded_bam_py = script_dir + "/bin/python/split_barcoded_bam.py"
-			
+
 			# Loop over the split sample files
 			for i in range(len(barcode_files)):
 				one_barcode_file = barcode_files[i]
-				pycall = " ".join(['python', split_barcoded_bam_py, input, bcbd, barcode_tag, one_barcode_file, mito_chr])
-				os.system(pycall)
-				
+				split_barcoded_bam(input, bcbd, barcode_tag, one_barcode_file, mito_chr)
+
 			# Update everything to appear like we've just set `call` on the set of bams
 			mode = "call"
 			input = bcbd 
@@ -217,7 +213,7 @@ def main(mode, input, output, name, mito_genome, ncores,
 			# Enact the split in a parallel manner if necessary
 			if(mode == "tenx"):
 				pool = Pool(processes=int(ncores))
-				pmblah = pool.starmap(split_chunk_file, zip(barcode_files, repeat(script_dir), repeat(input), repeat(bcbd), repeat(barcode_tag), repeat(mito_chr), repeat(umi_barcode)))
+				pmblah = pool.starmap(split_chunk_file, zip(barcode_files, repeat(input), repeat(bcbd), repeat(barcode_tag), repeat(mito_chr), repeat(umi_barcode)))
 				pool.close()
 				
 			umi_barcode = "MU"
@@ -352,47 +348,38 @@ def main(mode, input, output, name, mito_genome, ncores,
 			'proper_paired' : sqs(proper_pairs), 'NHmax' : sqs(nhmax), 'NMmax' : sqs(nmmax), 'max_javamem' : sqs(max_javamem)}
 		
 		# Potentially submit jobs to cluster
-		snakeclust = ""
+		snakeclust = []
 		njobs = int(jobs)
 		if(njobs > 0 and cluster != ""):
-			snakeclust = " --jobs " + jobs + " --cluster '" + cluster + "' "
+			snakeclust = ["--jobs", jobs, "--cluster", cluster]
 			click.echo(gettime() + "Recognized flags to process jobs on a computing cluster.", logf)
-			
+
 		click.echo(gettime() + "Processing samples with "+ncores+" threads", logf)
-		
+
 		y_s = of + "/.internal/parseltongue/snake.scatter.yaml"
 		with open(y_s, 'w') as yaml_file:
 			yaml=YAML()
 			yaml.default_flow_style = False
 			yaml.dump(dict1, yaml_file)
-		
-		cp_call = "cp " + y_s +  " " + logs + "/" + name + ".parameters.txt"
-		os.system(cp_call)
-	
+
+		shutil.copyfile(y_s, logs + "/" + name + ".parameters.txt")
+
 		if(mode == "call"):
-			
+
 			# Execute snakemake
-			snake_log = logs + "/" + name + ".snakemake_scatter.log"
-			
-			snake_log_out = ""
-			if not snake_stdout:
-				snake_log_out = ' &>' + snake_log
-				
-			snakecmd_scatter = 'snakemake'+snakeclust+' --snakefile ' + script_dir + '/bin/snake/Snakefile.Scatter --cores '+ncores+' --config cfp="'  + y_s + '"' + snake_log_out
-			os.system(snakecmd_scatter)
-			
+			snake_log = logs + "/" + name + ".snakemake_scatter.log" if not snake_stdout else None
+
+			snakecmd_scatter = ['snakemake'] + snakeclust + ['--snakefile', script_dir + '/bin/snake/Snakefile.Scatter', '--cores', ncores, '--config', 'cfp=' + y_s]
+			run_command(snakecmd_scatter, snake_log)
+
 		elif(mode == "tenx"):
-			
+
 			# Execute snakemake
-			snake_log = logs + "/" + name + ".snakemake_tenx.log"
-			
-			snake_log_out = ""
-			if not snake_stdout:
-				snake_log_out = ' &>' + snake_log
-				
-			snakecmd_tenx = 'snakemake'+snakeclust+' --snakefile ' + script_dir + '/bin/snake/Snakefile.tenx --cores '+ncores+' --config cfp="'  + y_s + '"'+ snake_log_out
-			os.system(snakecmd_tenx)
-		
+			snake_log = logs + "/" + name + ".snakemake_tenx.log" if not snake_stdout else None
+
+			snakecmd_tenx = ['snakemake'] + snakeclust + ['--snakefile', script_dir + '/bin/snake/Snakefile.tenx', '--cores', ncores, '--config', 'cfp=' + y_s]
+			run_command(snakecmd_tenx, snake_log)
+
 		click.echo(gettime() + "mgatk successfully processed the supplied .bam files", logf)
 
 	
@@ -411,56 +398,57 @@ def main(mode, input, output, name, mito_genome, ncores,
 			yaml.dump(dict2, yaml_file)
 		
 		# Snakemake gather
-		snake_log = logs + "/" + name + ".snakemake_gather.log"
-		
-		snake_log_out = ""
-		if not snake_stdout:
-			snake_log_out = ' &>' + snake_log 
-			
-		snakecmd_gather = 'snakemake --snakefile ' + script_dir + '/bin/snake/Snakefile.Gather --cores 1 --config cfp="' + y_g + '"' + snake_log_out
-		os.system(snakecmd_gather)
-	
+		snake_log = logs + "/" + name + ".snakemake_gather.log" if not snake_stdout else None
+
+		snakecmd_gather = ['snakemake', '--snakefile', script_dir + '/bin/snake/Snakefile.Gather', '--cores', '1', '--config', 'cfp=' + y_g]
+		run_command(snakecmd_gather, snake_log)
+
 	if(mode == "call" or mode == "tenx"):
 
 		# Make .rds file from the output
-		Rcall = "Rscript " + script_dir + "/bin/R/toRDS.R " + output + "/final " + name
-		os.system(Rcall)
+		run_command(['Rscript', script_dir + '/bin/R/toRDS.R', output + '/final', name])
 		click.echo(gettime() + "Successfully created final output files", logf)
 
 	if(mode == "remove-background"):
-			
+
 		of = output
 		check_software_exists("cellbender")
 		check_software_exists("Rscript")
-		
+
 		logf = open(output + "/logs" + "/bg.mgatk.log", 'a')
 		# prepare mgatk output for CellBender
 		# check that software exists
-		
+
 		cellbender_input_dir = output + "/cellbender_input"
 		make_folder(cellbender_input_dir)
 		# call prepare_cellbender.R to convert mgatk output to cellbender input for variable positions (specify cutoffs on --n_cells_conf_detected, --strand_correlation and --vmr as well?)"
-		Rcall = "Rscript " + script_dir + "/bin/R/prepare_cellbender.R -i " + output + "/final -o " + cellbender_input_dir
-		os.system(Rcall)
-		#print(Rcall)
+		run_command(['Rscript', script_dir + '/bin/R/prepare_cellbender.R', '-i', output + '/final', '-o', cellbender_input_dir])
 		click.echo(gettime() + "Prepared input for CellBender", logf)
 
 		# run CellBender
 		# check that software exists
-		
+
 		cellbender_output_dir = output + "/cellbender_output"
 		make_folder(cellbender_output_dir)
-		
-        # pass other arguments to cellbender?
-		cellbender_cmd = "cellbender remove-background --input " + output + "/cellbender_input --output " + output + "/cellbender_output/" + name + ".h5 --expected-cells " + str(ncells_fg) + " --total-droplets-included " + str(ncells_bg) + " --fpr 0.01 --epochs 100 --low-count-threshold 1"
-		os.system(cellbender_cmd)
-		#print(cellbender_cmd)
+
+		# pass other arguments to cellbender?
+		run_command([
+			'cellbender', 'remove-background',
+			'--input', output + '/cellbender_input',
+			'--output', output + '/cellbender_output/' + name + '.h5',
+			'--expected-cells', str(ncells_fg),
+			'--total-droplets-included', str(ncells_bg),
+			'--fpr', '0.01', '--epochs', '100', '--low-count-threshold', '1',
+		])
 		click.echo(gettime() + "Finished CellBender run", logf)
 
 		# convert CellBender output (here we could restrict the output to good cells only with the --cells argument, expects the barcodes.tsv file)
-		Rcall = "Rscript " + script_dir + "/bin/R/convert_cellbender_output.R -i " + output + "/final -c " + output + "/cellbender_output/" + name + ".h5 -o " + output + "/final/" + name + "_filtered.rds"
-		os.system(Rcall)
-		#print(Rcall)
+		run_command([
+			'Rscript', script_dir + '/bin/R/convert_cellbender_output.R',
+			'-i', output + '/final',
+			'-c', output + '/cellbender_output/' + name + '.h5',
+			'-o', output + '/final/' + name + '_filtered.rds',
+		])
 		click.echo(gettime() + "Converted CellBender output", logf)
 
 		if keep_temp_files:

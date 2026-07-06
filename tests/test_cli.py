@@ -114,3 +114,29 @@ def test_bcall_end_to_end_on_known_barcodes(runner, tmp_path, barcode_dir):
     )
     assert result.exit_code == 0, result.output
     assert (out_dir / "final" / "bc1.rds").exists()
+
+
+@requires_java
+@requires_snakemake
+@requires_mgatk_r_packages
+def test_tenx_end_to_end_on_known_barcodes(runner, tmp_path, barcode_dir):
+    out_dir = tmp_path / "out"
+    result = runner.invoke(
+        cli.main,
+        [
+            "tenx", "-i", str(barcode_dir / "test_barcode.bam"), "-n", "bc1",
+            "-o", str(out_dir), "-bt", "CB", "-b", str(barcode_dir / "test_barcodes.txt"),
+            "-c", "2", "--snake-stdout",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+
+    final = out_dir / "final"
+    assert (final / "bc1.rds").exists()
+    with gzip.open(final / "bc1.variant_stats.tsv.gz", "rt") as fh:
+        header = fh.readline().strip().split("\t")
+    assert header == [
+        "position", "nucleotide", "variant", "vmr", "mean", "variance",
+        "n_cells_conf_detected", "n_cells_over_5", "n_cells_over_10", "n_cells_over_20",
+        "n_cells_over_95", "max_heteroplasmy", "strand_correlation", "mean_coverage",
+    ]
