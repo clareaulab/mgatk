@@ -10,7 +10,7 @@ import time
 import pysam
 import glob
 
-from pkg_resources import get_distribution
+from importlib.metadata import version
 from subprocess import call, check_call
 from mgatk.mgatkHelp import *
 from ruamel.yaml import YAML
@@ -51,7 +51,7 @@ def main(input, output, name, mito_chromosome, ncores,
 	
 	script_dir = os.path.dirname(os.path.realpath(__file__))
 	cwd = os.getcwd()
-	__version__ = get_distribution('mgatk').version
+	__version__ = version('mgatk')
 	click.echo(gettime() + "mgatk-del v%s" % __version__)
 	
 	# Determine cores
@@ -166,14 +166,13 @@ def main(input, output, name, mito_chromosome, ncores,
 	os.system(cp_call)
 	
 	# Execute snakemake
-	snake_stats = logs + "/" + name + ".snakemake_del.stats"
 	snake_log = logs + "/" + name + ".snakemake_del.log"
-	
+
 	snake_log_out = ""
 	if not snake_stdout:
 		snake_log_out = ' &>' + snake_log
-		
-	snakecmd_del = 'snakemake'+snakeclust+' --snakefile ' + script_dir + '/singles_del/Snakefile.delSingles --cores '+ncores+' --config cfp="'  + y_s + '" --stats '+snake_stats + snake_log_out
+
+	snakecmd_del = 'snakemake'+snakeclust+' --snakefile ' + script_dir + '/singles_del/Snakefile.delSingles --cores '+ncores+' --config cfp="'  + y_s + '"' + snake_log_out
 	os.system(snakecmd_del)
 	click.echo(gettime() + "mgatk-del successfully processed the supplied .bam files")
 	click.echo(gettime() + "Successfully created final output files")

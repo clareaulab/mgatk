@@ -18,7 +18,7 @@ def string_hamming_distance(str1, str2):
     are different.
     eg "karolin" and "kathrin" is 3.
     """
-    return sum(itertools.imap(operator.ne, str1, str2))
+    return sum(c1 != c2 for c1, c2 in zip(str1, str2))
 
 
 def rev_comp(seq):
