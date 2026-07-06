@@ -11,7 +11,7 @@ import pysam
 import math
 import glob
 
-from pkg_resources import get_distribution
+from importlib.metadata import version
 from subprocess import call, check_call
 from .mgatkHelp import *
 from ruamel.yaml import YAML
@@ -82,7 +82,7 @@ def main(mode, input, output, name, mito_genome, ncores,
 	
 	script_dir = os.path.dirname(os.path.realpath(__file__))
 	cwd = os.getcwd()
-	__version__ = get_distribution('mgatk').version
+	__version__ = version('mgatk')
 	click.echo(gettime() + "mgatk v%s" % __version__)
 	
 	# Determine cores

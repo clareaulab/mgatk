@@ -11,7 +11,7 @@ import numpy as np
 import re
 import csv
 
-from pkg_resources import get_distribution
+from importlib.metadata import version
 
 
 @click.command()
@@ -39,7 +39,7 @@ def main(input, mito_chromosome, output, mito_length):
 	
 	script_dir = os.path.dirname(os.path.realpath(__file__))
 	cwd = os.getcwd()
-	__version__ = get_distribution('mgatk').version
+	__version__ = version('mgatk')
 	click.echo(gettime() + "mgatk-del-find v%s" % __version__)
 	R_plot_script = script_dir + "/bulk_del/plot_deletion_breaks_bulk.R"
 	
