@@ -11,7 +11,6 @@ import pysam
 import glob
 
 from importlib.metadata import version
-from subprocess import call, check_call
 from mgatk.mgatkHelp import *
 from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import SingleQuotedScalarString as sqs
@@ -150,30 +149,25 @@ def main(input, output, name, mito_chromosome, ncores,
 		'window_near' : sqs(window_outer), 'window_far' : sqs(window_inner)}
 	
 	# Potentially submit jobs to cluster
-	snakeclust = ""
+	snakeclust = []
 	njobs = int(jobs)
 	if(njobs > 0 and cluster != ""):
-		snakeclust = " --jobs " + jobs + " --cluster '" + cluster + "' "
+		snakeclust = ["--jobs", jobs, "--cluster", cluster]
 		click.echo(gettime() + "Recognized flags to process jobs on a computing cluster.")
-			
+
 	y_s = of + "/.internal/parseltongue/snake.dels.yaml"
 	with open(y_s, 'w') as yaml_file:
 		yaml=YAML()
 		yaml.default_flow_style = False
 		yaml.dump(dict1, yaml_file)
-	
-	cp_call = "cp " + y_s +  " " + logs + "/" + name + ".parameters_del.txt"
-	os.system(cp_call)
-	
+
+	shutil.copyfile(y_s, logs + "/" + name + ".parameters_del.txt")
+
 	# Execute snakemake
-	snake_log = logs + "/" + name + ".snakemake_del.log"
+	snake_log = logs + "/" + name + ".snakemake_del.log" if not snake_stdout else None
 
-	snake_log_out = ""
-	if not snake_stdout:
-		snake_log_out = ' &>' + snake_log
-
-	snakecmd_del = 'snakemake'+snakeclust+' --snakefile ' + script_dir + '/singles_del/Snakefile.delSingles --cores '+ncores+' --config cfp="'  + y_s + '"' + snake_log_out
-	os.system(snakecmd_del)
+	snakecmd_del = ['snakemake'] + snakeclust + ['--snakefile', script_dir + '/singles_del/Snakefile.delSingles', '--cores', ncores, '--config', 'cfp=' + y_s]
+	run_command(snakecmd_del, snake_log)
 	click.echo(gettime() + "mgatk-del successfully processed the supplied .bam files")
 	click.echo(gettime() + "Successfully created final output files")
 	

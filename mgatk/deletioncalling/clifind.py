@@ -5,6 +5,7 @@ import sys
 import shutil
 import random
 import string
+import subprocess
 import time
 import pysam
 import numpy as np
@@ -128,6 +129,5 @@ def main(input, mito_chromosome, output, mito_length):
 	
 	# Make the R call
 	click.echo(gettime() + "Visualizing results.")
-	Rcall = "Rscript " + R_plot_script + " " + outfile_clip + " " + outputSA
-	os.system(Rcall)
+	subprocess.run(["Rscript", R_plot_script, outfile_clip, outputSA], check=True)
 		
