@@ -6,13 +6,6 @@
 - **Breaking**: `--max-javamem`/`-jm` is deprecated and does nothing (there's
   no JVM left to size). It's still accepted so existing scripts don't fail;
   passing it now prints a one-line notice instead.
-- Fixed a latent bug in `tenx` mode: duplicate marking is barcode-aware (so
-  reads from different cells at the same position are never collapsed), but
-  the previous mechanism (Picard's `BARCODE_TAG`) turned out to do UMI-aware
-  matching that silently found zero duplicates whenever no true per-molecule
-  UMI was supplied (no `-ub` flag) -- the common case for standard
-  scATAC-seq/mtscATAC-seq data. `bam-dedup`'s barcode-aware grouping fixes
-  this and matches Picard's behavior in the cases where it did work correctly.
 - Refactored the standalone scripts under `mgatk/bin/python/` (invoked via
   `os.system('python script.py ...')`) into a proper importable package,
   `mgatk.processing`, called directly from the CLI and Snakemake rules.
