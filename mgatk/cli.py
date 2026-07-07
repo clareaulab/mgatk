@@ -45,6 +45,8 @@ from multiprocessing import Pool
 @click.option('--handle-overlap', '-ho', is_flag=True, help='Only count each base in the overlap region between a pair of reads once')
 @click.option('--low-coverage-threshold', '-lc', default=10, help='Variant count for each cell will be ignored below this when calculating VMR')
 
+@click.option('--max-javamem', '-jm', default = None, help='Deprecated, no longer used: duplicate removal no longer runs on a JVM. Accepted (and ignored) so existing scripts do not break.')
+
 @click.option('--proper-pairs', '-pp', is_flag=True, help='Require reads to be properly paired.')
 
 @click.option('--base-qual', '-q', default = 0, help='Minimum base quality for inclusion in the genotype count. Default = 0.')
@@ -68,7 +70,7 @@ from multiprocessing import Pool
 def main(mode, input, output, name, mito_genome, ncores,
 	cluster, jobs, barcode_tag, barcodes, min_barcode_reads,
 	nhmax, nmmax, keep_duplicates, umi_barcode, handle_overlap, low_coverage_threshold,
-	proper_pairs, base_qual, alignment_quality, emit_base_qualities,
+	max_javamem, proper_pairs, base_qual, alignment_quality, emit_base_qualities,
 	nsamples, keep_samples, ignore_samples,
 	     keep_temp_files, keep_qc_bams, skip_r, snake_stdout, ncells_fg, ncells_bg):
 	
@@ -82,7 +84,11 @@ def main(mode, input, output, name, mito_genome, ncores,
 	cwd = os.getcwd()
 	__version__ = version('mgatk')
 	click.echo(gettime() + "mgatk v%s" % __version__)
-	
+
+	if max_javamem is not None:
+		click.echo(gettime() + "NOTE: --max-javamem/-jm is deprecated and does nothing; "
+			"duplicate removal no longer runs on a JVM. Safe to remove from your command.")
+
 	# Determine cores
 	if(ncores == "detect"):
 		ncores = str(available_cpu_count())
