@@ -24,7 +24,7 @@ What you expected to happen instead.
  - Install method: [pip / conda / from source]
  - OS: [e.g. Ubuntu 22.04, macOS 14]
  - Python version: [`python --version`]
- - Relevant tool versions if applicable: `java -version`, `R --version`, `snakemake --version`
+ - Relevant tool versions if applicable: `R --version`, `snakemake --version`
 
 **Sanity check**
 Does `mgatk check -i <your.bam> -o <out> -n check -bt <tag> -g <genome>` pass? See [tests/README.md](../../tests/README.md#verifying-your-installation) for a few quick commands to confirm your install is healthy before digging further.

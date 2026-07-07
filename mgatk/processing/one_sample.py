@@ -1,7 +1,7 @@
 import pysam
 
 from .allele_counts import sumstats_bp, sumstats_bp_overlap
-from .dedup import dedup_with_picard
+from .dedup import dedup_bam
 from .filtering import filter_clip_bam
 
 
@@ -13,7 +13,6 @@ def process_one_sample(config, inputbam, outputbam, sample):
     runs).
     """
     outdir = config["output_directory"]
-    script_dir = config["script_dir"]
 
     mito_genome = config["mito_chr"]
     mito_length = str(config["mito_length"])
@@ -30,8 +29,6 @@ def process_one_sample(config, inputbam, outputbam, sample):
     nh_max = config["NHmax"]
     nm_max = config["NMmax"]
 
-    max_javamem = config["max_javamem"]
-
     rmlog = outputbam.replace(".qc.bam", ".rmdups.log").replace("/temp/ready_bam/", "/logs/rmdupslogs/")
     filtlog = outputbam.replace(".qc.bam", ".filter.log").replace("/temp/ready_bam/", "/logs/filterlogs/")
     temp_bam0 = outputbam.replace(".qc.bam", ".temp0.bam").replace("/temp/ready_bam/", "/temp/temp_bam/")
@@ -46,9 +43,9 @@ def process_one_sample(config, inputbam, outputbam, sample):
     pysam.sort("-o", temp_bam1, temp_bam0)
     pysam.index(temp_bam1)
 
-    # 3) (Optional) Remove duplicates; UMI-aware dedup only if a real 2-letter UMI tag is set
+    # 3) (Optional) Remove duplicates; barcode-aware dedup only if a real 2-letter UMI tag is set
     umi_tag = umi_barcode if (umi_barcode != "" and len(umi_barcode) == 2) else ""
-    dedup_with_picard(script_dir, temp_bam1, outputbam, rmlog, max_javamem, remove_duplicates, umi_tag)
+    dedup_bam(temp_bam1, outputbam, rmlog, remove_duplicates, umi_tag)
 
     # 4) Get allele counts per sample / base pair and per-base quality scores
     if handle_overlap == "True":

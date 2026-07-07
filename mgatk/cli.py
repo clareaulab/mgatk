@@ -45,8 +45,6 @@ from multiprocessing import Pool
 @click.option('--handle-overlap', '-ho', is_flag=True, help='Only count each base in the overlap region between a pair of reads once')
 @click.option('--low-coverage-threshold', '-lc', default=10, help='Variant count for each cell will be ignored below this when calculating VMR')
 
-@click.option('--max-javamem', '-jm', default = "8000m", help='Maximum memory for java for running duplicate removal per core. Default = 8000m.')
-
 @click.option('--proper-pairs', '-pp', is_flag=True, help='Require reads to be properly paired.')
 
 @click.option('--base-qual', '-q', default = 0, help='Minimum base quality for inclusion in the genotype count. Default = 0.')
@@ -70,7 +68,7 @@ from multiprocessing import Pool
 def main(mode, input, output, name, mito_genome, ncores,
 	cluster, jobs, barcode_tag, barcodes, min_barcode_reads,
 	nhmax, nmmax, keep_duplicates, umi_barcode, handle_overlap, low_coverage_threshold,
-	max_javamem, proper_pairs, base_qual, alignment_quality, emit_base_qualities,
+	proper_pairs, base_qual, alignment_quality, emit_base_qualities,
 	nsamples, keep_samples, ignore_samples,
 	     keep_temp_files, keep_qc_bams, skip_r, snake_stdout, ncells_fg, ncells_bg):
 	
@@ -97,10 +95,7 @@ def main(mode, input, output, name, mito_genome, ncores,
 	else:
 		remove_duplicates = True
 	
-	# Verify dependencies	
-	if remove_duplicates:
-		check_software_exists("java")
-	
+	# Verify dependencies
 	if (mode == "call" or mode == "tenx" or mode == "bcall") and not skip_r:
 		check_software_exists("R")
 		check_R_packages(["data.table", "SummarizedExperiment", "GenomicRanges", "Matrix"])
@@ -345,7 +340,7 @@ def main(mode, input, output, name, mito_genome, ncores,
 			'base_qual' : sqs(base_qual), 'remove_duplicates' : sqs(remove_duplicates), 'handle_overlap' : sqs(handle_overlap),
 			'low_coverage_threshold' : sqs(low_coverage_threshold), 'barcode_tag' : sqs(barcode_tag), 'umi_barcode' : sqs(umi_barcode),
 			'alignment_quality' : sqs(alignment_quality), 'emit_base_qualities' : sqs(emit_base_qualities),
-			'proper_paired' : sqs(proper_pairs), 'NHmax' : sqs(nhmax), 'NMmax' : sqs(nmmax), 'max_javamem' : sqs(max_javamem)}
+			'proper_paired' : sqs(proper_pairs), 'NHmax' : sqs(nhmax), 'NMmax' : sqs(nmmax)}
 		
 		# Potentially submit jobs to cluster
 		snakeclust = []

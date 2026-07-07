@@ -23,10 +23,6 @@ def _r_packages_available(packages):
     return out.returncode == 0 and "FALSE" not in out.stdout
 
 
-requires_java = pytest.mark.skipif(
-    shutil.which("java") is None, reason="java is required for duplicate removal"
-)
-
 requires_snakemake = pytest.mark.skipif(
     shutil.which("snakemake") is None, reason="snakemake is required to run the pipeline"
 )
