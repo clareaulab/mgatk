@@ -4,7 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from mgatk import cli
-from conftest import requires_java, requires_mgatk_r_packages, requires_snakemake
+from conftest import requires_mgatk_r_packages, requires_snakemake
 
 
 @pytest.fixture
@@ -70,11 +70,10 @@ def test_check_passes_with_valid_bam(runner, tmp_path, humanbam_dir):
 
 # ---------------------------------------------------------------------------
 # End-to-end smoke tests against the bundled sample data.
-# These require java (duplicate removal), snakemake, and the R/Bioconductor
-# packages mgatk uses to build final output; skipped automatically if absent.
+# These require snakemake and the R/Bioconductor packages mgatk uses to build
+# final output; skipped automatically if absent.
 # ---------------------------------------------------------------------------
 
-@requires_java
 @requires_snakemake
 @requires_mgatk_r_packages
 def test_call_end_to_end_on_humanbam(runner, tmp_path, humanbam_dir):
@@ -99,7 +98,6 @@ def test_call_end_to_end_on_humanbam(runner, tmp_path, humanbam_dir):
     assert header_line.strip() != ""
 
 
-@requires_java
 @requires_snakemake
 @requires_mgatk_r_packages
 def test_bcall_end_to_end_on_known_barcodes(runner, tmp_path, barcode_dir):
@@ -116,7 +114,6 @@ def test_bcall_end_to_end_on_known_barcodes(runner, tmp_path, barcode_dir):
     assert (out_dir / "final" / "bc1.rds").exists()
 
 
-@requires_java
 @requires_snakemake
 @requires_mgatk_r_packages
 def test_tenx_end_to_end_on_known_barcodes(runner, tmp_path, barcode_dir):

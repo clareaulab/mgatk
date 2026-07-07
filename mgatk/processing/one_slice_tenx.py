@@ -1,7 +1,7 @@
 import pysam
 
 from .allele_counts_tenx import sumstats_bp_tenx, sumstats_bp_tenx_overlap
-from .dedup import dedup_with_picard
+from .dedup import dedup_bam
 from .filtering import filter_clip_bam
 
 
@@ -12,7 +12,6 @@ def process_one_slice_tenx(config, input_bam, sample):
     Snakemake loads via `configfile:` for `tenx` runs).
     """
     outdir = config["output_directory"]
-    script_dir = config["script_dir"]
 
     mito_genome = config["mito_chr"]
     mito_length = str(config["mito_length"])
@@ -28,8 +27,6 @@ def process_one_slice_tenx(config, input_bam, sample):
     alignment_quality = config["alignment_quality"]
     nh_max = config["NHmax"]
     nm_max = config["NMmax"]
-
-    max_javamem = config["max_javamem"]
 
     barcodes_file = outdir + "/temp/barcode_files/" + sample + ".txt"
     out_pre = outdir + "/temp/sparse_matrices/" + sample
@@ -48,7 +45,7 @@ def process_one_slice_tenx(config, input_bam, sample):
     pysam.index(temp_bam1)
 
     # 3) (Optional) Remove duplicates; tenx mode always dedups within the (cell/UMI) barcode tag
-    dedup_with_picard(script_dir, temp_bam1, output_bam, rmlog, max_javamem, remove_duplicates, umi_barcode)
+    dedup_bam(temp_bam1, output_bam, rmlog, remove_duplicates, umi_barcode)
 
     # 4) Get per-cell allele counts
     if handle_overlap == "True":

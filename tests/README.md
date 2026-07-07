@@ -2,7 +2,7 @@
 
 After installing mgatk (`pip install mgatk`, or `pip install -e .` from a source
 checkout), a few quick commands will confirm the CLI and its dependencies
-(java, R + Bioconductor packages, snakemake) are wired up correctly. Run these
+(R + Bioconductor packages, snakemake) are wired up correctly. Run these
 from the repository root:
 
 ```
@@ -15,8 +15,8 @@ mgatk check -i tests/humanbam/MGH60-P6-A11.mito.bam -o /tmp/mgatk_check -n check
 - `mgatk support` lists the built-in reference genomes (rCRS, hg19, hg38, mm10, etc.) with no other dependencies required.
 - `mgatk check` validates a real `.bam` file end-to-end against a reference genome without running the full pipeline; a passing run ends with `mgatk check passed!`.
 
-To confirm the full pipeline (including duplicate removal with `java`/Picard and
-final `.rds` generation with `R`), run a real `call` on the bundled test data:
+To confirm the full pipeline (including duplicate removal and final `.rds`
+generation with `R`), run a real `call` on the bundled test data:
 
 ```
 mgatk call -i tests/humanbam -o /tmp/mgatk_call_test -n verify -g hg19
@@ -39,10 +39,10 @@ The suite is split into two kinds of tests:
   no external dependencies beyond what `pip install` already provides.
 - **End-to-end smoke tests** (in `test_cli.py` and `test_deletioncalling.py`)
   invoke the real `mgatk`/`mgatk-del`/`mgatk-del-find` CLIs against the bundled
-  `.bam` files and check the actual output files. These require `java`,
-  `snakemake`, and the R/Bioconductor packages mgatk depends on
-  (`data.table`, `SummarizedExperiment`, `GenomicRanges`, `Matrix`, `dplyr`);
-  if any of those aren't available, the corresponding tests are skipped
+  `.bam` files and check the actual output files. These require `snakemake`
+  and the R/Bioconductor packages mgatk depends on (`data.table`,
+  `SummarizedExperiment`, `GenomicRanges`, `Matrix`, `dplyr`); if any of those
+  aren't available, the corresponding tests are skipped
   automatically (see the `requires_*` markers in `tests/conftest.py`) rather
   than failing.
 
