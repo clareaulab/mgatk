@@ -5,6 +5,7 @@ import re
 import os
 import sys
 import subprocess
+import gzip
 import pysam
 import filecmp
 import math
@@ -173,6 +174,11 @@ def make_folder(folder):
 	if not os.path.exists(folder):
 		os.makedirs(folder)
 
+def _open_barcode_file(fname):
+	if fname.endswith(".gz"):
+		return gzip.open(fname, "rt")
+	return open(fname)
+
 def file_len(fname):
     with open(fname) as f:
         return sum(1 for _ in f)
@@ -184,19 +190,19 @@ def split_barcodes_file(barcode_file, nsamples, output):
 	n_samples_observed = file_len(barcode_file)
 	
 	# See if we need to do anything... if user didn't specify or we have relatively few samples, just return the barcode file back
-	if(n_samples_observed < nsamples or nsamples == 0):
+	if((n_samples_observed < nsamples or nsamples == 0) and not barcode_file.endswith(".gz")):
 		return([barcode_file])
 	else:
 		# Need to split files into a maximum of n samples
-		total_files = math.ceil(n_samples_observed / nsamples)
-		lines_per_file = nsamples
+		lines_per_file = nsamples if nsamples else max(n_samples_observed, 1)
+		total_files = math.ceil(n_samples_observed / lines_per_file)
 		
 		# Set up a temporary output folder to route files to
 		full_output_folder = output + "/temp" + "/barcode_files"
 		make_folder(full_output_folder)
 		smallfile = None
 		counter = 0
-		with open(barcode_file) as bigfile:
+		with _open_barcode_file(barcode_file) as bigfile:
 			for lineno, line in enumerate(bigfile):
 				if lineno % lines_per_file == 0:
 					if smallfile:

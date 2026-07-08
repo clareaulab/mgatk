@@ -17,7 +17,7 @@ from ruamel.yaml.scalarstring import SingleQuotedScalarString as sqs
 from multiprocessing import Pool
 
 @click.command()
-@click.version_option()
+@click.version_option(version=__version__, prog_name='mgatk-del')
 @click.option('--input', '-i', default = "", required=True, help='Input; either directory of singular .bam file; see wiki')
 @click.option('--output', '-o', default="mgatk_out", help='Output directory for analysis.')
 @click.option('--name', '-n', default="mgatk_del",  help='Prefix for project name')

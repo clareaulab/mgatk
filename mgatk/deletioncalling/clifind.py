@@ -16,7 +16,7 @@ from importlib.metadata import version
 
 
 @click.command()
-@click.version_option()
+@click.version_option(version=__version__, prog_name='mgatk-del-find')
 @click.option('--input', '-i', default = ".", required=True, help='Input; a single .bam file of reads to be processed.')
 @click.option('--mito-chromosome', '-mc', default = "chrM", required=True, help='Name of mtDNA chromosome in bam file (e.g. chrM or MT)')
 @click.option('--output', '-o', default = "mgatkdel_find", required=True, help='Name of output files prefix')
