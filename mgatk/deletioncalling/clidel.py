@@ -10,7 +10,7 @@ import time
 import pysam
 import glob
 
-from pkg_resources import get_distribution
+from mgatk import __version__
 from subprocess import call, check_call
 from mgatk.mgatkHelp import *
 from ruamel.yaml import YAML
@@ -18,7 +18,7 @@ from ruamel.yaml.scalarstring import SingleQuotedScalarString as sqs
 from multiprocessing import Pool
 
 @click.command()
-@click.version_option()
+@click.version_option(version=__version__, prog_name='mgatk-del')
 @click.option('--input', '-i', default = "", required=True, help='Input; either directory of singular .bam file; see wiki')
 @click.option('--output', '-o', default="mgatk_out", help='Output directory for analysis.')
 @click.option('--name', '-n', default="mgatk_del",  help='Prefix for project name')
@@ -51,7 +51,6 @@ def main(input, output, name, mito_chromosome, ncores,
 	
 	script_dir = os.path.dirname(os.path.realpath(__file__))
 	cwd = os.getcwd()
-	__version__ = get_distribution('mgatk').version
 	click.echo(gettime() + "mgatk-del v%s" % __version__)
 	
 	# Determine cores

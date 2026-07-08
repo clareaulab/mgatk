@@ -11,11 +11,11 @@ import numpy as np
 import re
 import csv
 
-from pkg_resources import get_distribution
+from mgatk import __version__
 
 
 @click.command()
-@click.version_option()
+@click.version_option(version=__version__, prog_name='mgatk-del-find')
 @click.option('--input', '-i', default = ".", required=True, help='Input; a single .bam file of reads to be processed.')
 @click.option('--mito-chromosome', '-mc', default = "chrM", required=True, help='Name of mtDNA chromosome in bam file (e.g. chrM or MT)')
 @click.option('--output', '-o', default = "mgatkdel_find", required=True, help='Name of output files prefix')
@@ -39,7 +39,6 @@ def main(input, mito_chromosome, output, mito_length):
 	
 	script_dir = os.path.dirname(os.path.realpath(__file__))
 	cwd = os.getcwd()
-	__version__ = get_distribution('mgatk').version
 	click.echo(gettime() + "mgatk-del-find v%s" % __version__)
 	R_plot_script = script_dir + "/bulk_del/plot_deletion_breaks_bulk.R"
 	
@@ -130,4 +129,3 @@ def main(input, mito_chromosome, output, mito_length):
 	click.echo(gettime() + "Visualizing results.")
 	Rcall = "Rscript " + R_plot_script + " " + outfile_clip + " " + outputSA
 	os.system(Rcall)
-		
